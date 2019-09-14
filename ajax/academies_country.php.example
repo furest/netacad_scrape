@@ -1,0 +1,19 @@
+ 
+<?php
+    if(!isset($_POST['region'])){
+        echo('{error:"true", reason="no region given"}');
+        die();
+    }
+    $pdo = new PDO("mysql:host=localhost;dbname=netacad", 'USERNAME', 'PASSWORD');
+    $stmt = $pdo->prepare("SELECT * FROM academies WHERE country_code = :country_code");
+    $ret = $stmt->execute([':country_code' => $_POST['region']]);
+    if($ret == true){
+        $acads = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo(json_encode($acads));
+    } else {
+        echo("Error");
+    }
+
+
+    
+?>

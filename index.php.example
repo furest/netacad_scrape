@@ -1,0 +1,78 @@
+ 
+<html>
+<head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+<body>
+    <div id="regions_div" style="width: 900px; height: 500px;"></div>
+    <div id="acad_list"></div>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <!-- jQuery -->
+    <script src="jquery.min.js"></script>
+    <script>
+        google.charts.load('current', {
+            'packages':['geochart'],
+            // Note: you will need to get a mapsApiKey for your project.
+            // See: https://developers.google.com/chart/interactive/docs/basic_load_libs#load-settings
+            'mapsApiKey': 'API_KEY'
+        });
+        google.charts.setOnLoadCallback(drawRegionsMap);
+
+        function regionHandler(code){
+            var params = {};
+            
+            $.post('ajax/academies_country.php', code,function(list){
+                var base_table = `<table class="table table-dark">
+                                    <thead>
+                                        <tr>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Street</th>
+                                        <th scope="col">Locality</th>
+                                        <th scope="col">State</th>
+                                        <th scope="col">Link</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>`;
+                for (let academy of list){
+                    base_table += '<tr>'
+                    base_table += '<td>' + academy['name'] + '</td>';
+                    base_table += '<td>' + academy['street'] + '</td>';
+                    base_table += '<td>' + academy['locality'] + '</td>';
+                    base_table += '<td>' + academy['state'] + '</td>';
+                    base_table += '<td><a href="https://www.netacad.com/fr/node/' + academy['ID'] + '"> Page </a></td>';
+                    base_table += '</tr>'
+                }
+                base_table += `</tbody>
+                            </table>`;
+                
+                $('#acad_list').html(base_table);
+            }, "json");
+        }
+        function drawRegionsMap() {
+            var data = google.visualization.arrayToDataTable([
+            ['Country', 'Academies'],
+            <?php
+                $pdo = new PDO("mysql:host=localhost;dbname=netacad", 'netacad', 'netacadpassword');
+                $res = $pdo->query("SELECT academies.country_code, countries.country, count(ID) AS nb_acad FROM academies INNER JOIN countries ON academies.country_code = countries.country_code GROUP BY country, country_code;");
+                foreach($res as $row){
+                    echo('["'.$row['country'].'",'.$row['nb_acad'].'],');
+                }
+            ?>
+            ]);
+            console.log(data);
+
+            var options = {};
+
+            var chart = new google.visualization.GeoChart(document.getElementById('regions_div'));
+                    google.visualization.events.addListener(chart, 'regionClick', regionHandler);
+            chart.draw(data, options);
+            
+        }
+    </script>
+</body>
+</html>
+
+<?php
